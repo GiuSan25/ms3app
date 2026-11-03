@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ms3vrtv</title>
+    <title>CYBERFLIX VR PRO - Multiverso Cinematográfico 3D</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Iconos -->
@@ -133,10 +133,10 @@
     <div id="welcome-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-1000">
         <div class="relative z-10 flex flex-col items-center text-center px-4 max-w-2xl w-full">
             <!-- Logo VR Animated Hologram -->
-            <div class="relative mb-6 group cursor-pointer">
-                <div class="absolute -inset-2 rounded-full bg-gradient-to-r from-cyan-500 via-purple-600 to-pink-500 blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
-                <div class="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-slate-950 border-2 border-cyan-400 flex items-center justify-center shadow-2xl">
-                    <i class="fa-solid fa-vr-cardboard text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 via-teal-200 to-pink-500 animate-bounce"></i>
+            <div class="relative mb-10 group cursor-pointer -mt-6">
+                <div class="absolute -inset-2 rounded-full bg-gradient-to-r from-cyan-500 via-pink-500 to-purple-600 blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
+                <div class="relative w-20 h-20 md:w-24 md:h-24 rounded-full bg-slate-950 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(0,240,255,0.5)] group-hover:scale-105 transition duration-500">
+                    <i class="fa-solid fa-vr-cardboard text-cyan-400 text-3xl md:text-4xl filter drop-shadow-[0_0_10px_#00f0ff] group-hover:text-pink-500 transition duration-300"></i>
                 </div>
             </div>
 
@@ -341,15 +341,56 @@
         // --- BASE DE DATOS ESTRUCTURADA CON SECCIONES PRO Y PANTALLA PRINCIPAL ---
         const CATEGORIES_DATA = {
             'PROGRAMAS VR': {
-                hero: { id: 'prog_hero', title: 'VR UNIVERSE SHOW', category: 'PROGRAMA PRINCIPAL', desc: 'Edición especial de entretenimiento inmersivo 360° con tecnología holográfica.', color: '#00f0ff', bg: '#041d33', icon: 'fa-tv' },
+                hero: { 
+                    id: 'prog_hero', 
+                    title: 'MEDICINA VR', 
+                    category: 'PROGRAMA PRINCIPAL', 
+                    desc: 'Con la conducción de Norberto Furman', 
+                    color: '#00f0ff', 
+                    bg: '#041d33', 
+                    icon: 'fa-user-doctor',
+                    image: 'media/furman.png'
+                },
                 rows: [
                     {
                         name: "PROGRAMAS DESTACADOS",
                         items: [
-                            { id: 'prog1', title: 'CYBER LAB 360', category: 'TECNOLOGÍA', color: '#00f0ff', bg: '#021629', icon: 'fa-flask' },
-                            { id: 'prog2', title: 'FUTURO DIGITAL', category: 'DOCUMENTAL', color: '#00f0ff', bg: '#022038', icon: 'fa-microchip' },
-                            { id: 'prog3', title: 'UNIVERSO PARALELO', category: 'SCI-FI', color: '#00f0ff', bg: '#011224', icon: 'fa-atom' },
-                            { id: 'prog4', title: 'EXPEDICIÓN VR', category: 'AVENTURA', color: '#00f0ff', bg: '#032847', icon: 'fa-compass' }
+                            { 
+                                id: 'prog1', 
+                                title: 'BUSCANDO A LA FUTURA VEDETTE', 
+                                category: 'CON LA CONDUCCIÓN DE CARMEN BARBIERI', 
+                                color: '#00f0ff', 
+                                bg: '#021629', 
+                                icon: 'fa-star',
+                                image: 'media/buscandoalafuturavedette.png'
+                            },
+                            { 
+                                id: 'prog2', 
+                                title: 'LA MASA VR', 
+                                category: 'ENTRETENIMIENTO', 
+                                color: '#00f0ff', 
+                                bg: '#022038', 
+                                icon: 'fa-dumbbell',
+                                image: 'media/lamasa.png'
+                            },
+                            { 
+                                id: 'prog3', 
+                                title: 'BRITHER THE SKATEBOARD', 
+                                category: 'CON LA CONDUCCIÓN DE ERIC ANGULO', 
+                                color: '#00f0ff', 
+                                bg: '#011224', 
+                                icon: 'fa-person-skateboarding',
+                                image: 'media/skate.png'
+                            },
+                            { 
+                                id: 'prog4', 
+                                title: 'VR MODA', 
+                                category: 'CON LA CONDUCCIÓN DE JANA GRINFELD', 
+                                color: '#00f0ff', 
+                                bg: '#032847', 
+                                icon: 'fa-shirt',
+                                image: 'media/moda.png'
+                            }
                         ]
                     },
                     {
@@ -898,58 +939,94 @@
             canvas.height = isHero ? 512 : 288;
             const ctx = canvas.getContext('2d');
 
-            // Fondo degradado futurista
-            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            gradient.addColorStop(0, item.bg || '#041d33');
-            gradient.addColorStop(0.5, '#020b14');
-            gradient.addColorStop(1, '#080010');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const texture = new THREE.CanvasTexture(canvas);
 
-            // Rejilla Cyberpunk de fondo
-            ctx.strokeStyle = item.color || '#00f0ff';
-            ctx.globalAlpha = 0.15;
-            ctx.lineWidth = 2;
-            const step = isHero ? 40 : 25;
-            for (let x = 0; x < canvas.width; x += step) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            function renderCanvas(img = null) {
+                // Fondo degradado futurista
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, item.bg || '#041d33');
+                gradient.addColorStop(0.5, '#020b14');
+                gradient.addColorStop(1, '#080010');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Si hay imagen de portada local/remota, renderizarla de fondo
+                if (img) {
+                    try {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // Overlay de graduado para asegurar legibilidad de títulos
+                        const imgOverlay = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                        imgOverlay.addColorStop(0, 'rgba(0,0,0,0.4)');
+                        imgOverlay.addColorStop(0.5, 'rgba(0,0,0,0.2)');
+                        imgOverlay.addColorStop(1, 'rgba(0,0,0,0.85)');
+                        ctx.fillStyle = imgOverlay;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    } catch(e) {
+                        console.warn('Cover image render fallback:', e);
+                    }
+                } else {
+                    // Rejilla Cyberpunk de fondo
+                    ctx.strokeStyle = item.color || '#00f0ff';
+                    ctx.globalAlpha = 0.15;
+                    ctx.lineWidth = 2;
+                    const step = isHero ? 40 : 25;
+                    for (let x = 0; x < canvas.width; x += step) {
+                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                    }
+                    for (let y = 0; y < canvas.height; y += step) {
+                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1.0;
+                }
+
+                // Marco interno neón
+                ctx.strokeStyle = item.color || '#00f0ff';
+                ctx.lineWidth = isHero ? 8 : 4;
+                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+                // Categoria / Subtítulo
+                ctx.fillStyle = item.color || '#00f0ff';
+                ctx.font = isHero ? 'bold 24px Orbitron' : 'bold 13px Orbitron';
+                ctx.fillText((item.category || 'VR 360°').toUpperCase(), 25, isHero ? 50 : 35);
+
+                // Título Principal Alta Visibilidad
+                ctx.fillStyle = '#ffffff';
+                ctx.font = isHero ? 'black 48px Orbitron' : 'bold 22px Orbitron';
+                
+                // Truncar o envolver texto si es muy largo
+                const maxW = canvas.width - 50;
+                ctx.fillText(item.title, 25, isHero ? 110 : 75, maxW);
+
+                if (isHero && item.desc) {
+                    ctx.fillStyle = '#00f0ff';
+                    ctx.font = 'bold 24px Rajdhani';
+                    ctx.fillText(item.desc, 25, 160, maxW);
+                }
+
+                // Botón de Reproducir en Holograma
+                const btnY = canvas.height - (isHero ? 80 : 45);
+                ctx.fillStyle = item.color || '#00f0ff';
+                ctx.fillRect(25, btnY, isHero ? 220 : 140, isHero ? 45 : 28);
+
+                ctx.fillStyle = '#000000';
+                ctx.font = isHero ? 'bold 20px Orbitron' : 'bold 12px Orbitron';
+                ctx.fillText('► REPRODUCIR', 35, btnY + (isHero ? 28 : 19));
+
+                texture.needsUpdate = true;
             }
-            for (let y = 0; y < canvas.height; y += step) {
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-            }
-            ctx.globalAlpha = 1.0;
 
-            // Marco interno
-            ctx.strokeStyle = item.color || '#00f0ff';
-            ctx.lineWidth = isHero ? 8 : 4;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            // Iniciar render inicial sin imagen
+            renderCanvas();
 
-            // Icono Central / Badge
-            ctx.fillStyle = item.color || '#00f0ff';
-            ctx.font = isHero ? 'bold 28px Orbitron' : 'bold 16px Orbitron';
-            ctx.fillText(item.category || 'VR 360°', 30, isHero ? 60 : 40);
-
-            // Título Principal Alta Visibilidad
-            ctx.fillStyle = '#ffffff';
-            ctx.font = isHero ? 'black 54px Orbitron' : 'bold 28px Orbitron';
-            ctx.fillText(item.title, 30, isHero ? 130 : 90);
-
-            if (isHero && item.desc) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.font = '22px Rajdhani';
-                ctx.fillText(item.desc, 30, 180);
+            // Cargar imagen de portada si está disponible
+            if (item.image) {
+                const coverImg = new Image();
+                coverImg.onload = () => renderCanvas(coverImg);
+                coverImg.onerror = () => renderCanvas();
+                coverImg.src = item.image;
             }
 
-            // Botón de Reproducir en Holograma
-            const btnY = canvas.height - (isHero ? 90 : 50);
-            ctx.fillStyle = item.color || '#00f0ff';
-            ctx.fillRect(30, btnY, isHero ? 240 : 160, isHero ? 50 : 32);
-
-            ctx.fillStyle = '#000000';
-            ctx.font = isHero ? 'bold 22px Orbitron' : 'bold 14px Orbitron';
-            ctx.fillText('► REPRODUCIR', 45, btnY + (isHero ? 32 : 22));
-
-            return new THREE.CanvasTexture(canvas);
+            return texture;
         }
 
         // --- INTERACCIONES, MOUSE Y RAYCASTER ---
