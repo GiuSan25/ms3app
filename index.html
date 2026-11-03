@@ -528,9 +528,6 @@
         // Modo Estereoscópico VR
         let isStereoVR = false;
 
-        // Reproductor de cine simulado (Ecualizador animado)
-        let simulatedVideoTime = 0;
-
         // --- INICIALIZACIÓN PRINCIPAL ---
         function initEngine() {
             const container = document.getElementById('webgl-container');
@@ -548,6 +545,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.setScissorTest(false);
             container.appendChild(renderer.domElement);
 
             // 4. Luces Ambientales de Neón Vivas
@@ -979,11 +977,11 @@
             const texture = new THREE.CanvasTexture(canvas);
 
             function renderCanvas(img = null) {
-                // Limpiar fondo sin cuadrillé ni patrones
+                // Fondo sólido limpio sin ninguna raya, trama o cuadrícula
                 ctx.fillStyle = item.bg || '#041d33';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Dibujar imagen de portada limpia y directa de punta a punta sin capas de opacidad
+                // Dibujar imagen de portada con la máxima nitidez posible y limpia
                 if (img) {
                     try {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -995,7 +993,7 @@
                 texture.needsUpdate = true;
             }
 
-            // Render inicial
+            // Render inicial limpio
             renderCanvas();
 
             // Cargar imagen de portada limpia si existe
@@ -1119,6 +1117,14 @@
                 gazeEnabled = e.target.checked;
                 document.getElementById('gaze-cursor-container').style.display = gazeEnabled ? 'block' : 'none';
             });
+
+            // VR Split Screen Toggle para activar/desactivar modo gafas VR
+            const vrToggle = document.getElementById('vr-split-toggle');
+            if (vrToggle) {
+                vrToggle.addEventListener('change', (e) => {
+                    isStereoVR = e.target.checked;
+                });
+            }
 
             document.getElementById('reset-cam-btn').addEventListener('click', () => {
                 targetRotation = { x: 0, y: 0 };
@@ -1377,7 +1383,34 @@
                 }
             }
 
-            renderer.render(scene, camera);
+            // Renderizado 3D (Normal o Estereoscópico en modo Gafas VR)
+            if (isStereoVR) {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                const halfWidth = width / 2;
+                const eyeSeparation = 0.08;
+
+                renderer.setScissorTest(true);
+
+                // Ojo Izquierdo
+                camera.position.x = -eyeSeparation;
+                renderer.setViewport(0, 0, halfWidth, height);
+                renderer.setScissor(0, 0, halfWidth, height);
+                renderer.render(scene, camera);
+
+                // Ojo Derecho
+                camera.position.x = eyeSeparation;
+                renderer.setViewport(halfWidth, 0, halfWidth, height);
+                renderer.setScissor(halfWidth, 0, halfWidth, height);
+                renderer.render(scene, camera);
+
+                // Restaurar posición de la cámara
+                camera.position.x = 0;
+                renderer.setScissorTest(false);
+            } else {
+                renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+                renderer.render(scene, camera);
+            }
         }
 
         // Iniciar Motor cuando la ventana cargue
