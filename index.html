@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CYBERFLIX VR PRO - Multiverso Cinematográfico 3D</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js (Motor 3D) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@300;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #020208;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* Modern Glassmorphism UI */
+        .glass-panel {
+            background: rgba(8, 14, 28, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+        }
+
+        .glass-btn {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(255, 0, 128, 0.25));
+            border: 1px solid rgba(0, 240, 255, 0.7);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.6), rgba(255, 0, 128, 0.6));
+            border-color: #00f0ff;
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.9), 0 0 15px #ff007f;
+            transform: scale(1.05);
+        }
+
+        .neon-glow-cyan {
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.9), 0 0 24px rgba(0, 240, 255, 0.5);
+        }
+
+        /* Puntero de Mirada VR (Gaze Cursor) */
+        #gaze-cursor-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 50;
+            display: none;
+        }
+
+        .gaze-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #00f0ff;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #00f0ff, 0 0 24px #00f0ff;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .gaze-ring {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(0, 240, 255, 0.3);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .gaze-progress {
+            width: 48px;
+            height: 48px;
+            border: 3px solid transparent;
+            border-top-color: #ff007f;
+            border-right-color: #ff007f;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+        }
+
+        /* Scanlines y HUD overlay */
+        .scanlines {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.5); border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-black text-white overflow-hidden">
+
+    <!-- Scanline Overlay Futurista -->
+    <div class="scanlines fixed inset-0 z-30 opacity-40"></div>
+
+    <!-- 1. PANTALLA DE BIENVENIDA FUTURISTA -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-1000">
+        <div class="relative z-10 flex flex-col items-center text-center px-4 max-w-2xl">
+            <!-- Logo VR Animated Hologram -->
+            <div class="relative mb-8 group cursor-pointer">
+                <div class="absolute -inset-2 rounded-full bg-gradient-to-r from-cyan-500 via-purple-600 to-pink-500 blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 animate-pulse"></div>
+                <div class="relative w-40 h-40 rounded-full bg-slate-950 border-2 border-cyan-400 flex items-center justify-center shadow-2xl">
+                    <i class="fa-solid fa-vr-cardboard text-6xl text-transparent bg-clip-text bg-gradient-to-tr from-cyan-400 via-teal-200 to-pink-500 animate-bounce"></i>
+                </div>
+            </div>
+
+            <h1 class="font-orbitron text-5xl md:text-7xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-500 mb-3 neon-glow-cyan">
+                CYBERFLIX <span class="text-xs align-top border border-pink-500 px-2.5 py-1 rounded-md text-pink-400 tracking-normal">VR 4K</span>
+            </h1>
+            <p class="text-cyan-200/80 text-lg md:text-2xl font-medium mb-10 tracking-widest uppercase">
+                Plataforma de Streaming Holográfico 360°
+            </p>
+
+            <!-- Botón 3D "INGRESAR AL UNIVERSO" -->
+            <button id="enter-btn" class="glass-btn font-orbitron text-cyan-200 font-bold text-xl px-12 py-5 rounded-2xl tracking-widest flex items-center gap-4 cursor-pointer border-t-2 border-b-2 border-cyan-400 group">
+                <span>INGRESAR AL UNIVERSO</span>
+                <i class="fa-solid fa-atom text-pink-500 group-hover:rotate-180 transition-transform duration-700 text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="absolute bottom-6 text-xs text-cyan-400/60 font-mono tracking-widest flex items-center gap-4">
+            <span><i class="fa-solid fa-microchip text-pink-500"></i> THREE.JS VR ENGINE v3.5</span>
+            <span>|</span>
+            <span><i class="fa-solid fa-wifi text-cyan-400"></i> STREAMING HOLOGRÁFICO ACTIVO</span>
+        </div>
+    </div>
+
+    <!-- 2. CANVAS THREE.JS (UNIVERSO VR 3D) -->
+    <div id="webgl-container" class="w-full h-full absolute inset-0 z-0"></div>
+
+    <!-- 3. PUNTERO DE MIRADA VR (GAZE CURSOR 3S) -->
+    <div id="gaze-cursor-container">
+        <div class="gaze-ring"></div>
+        <div id="gaze-progress" class="gaze-progress"></div>
+        <div class="gaze-dot"></div>
+    </div>
+
+    <!-- 4. UI HUD / BOTÓN MENÚ -->
+    <div id="ui-hud" class="fixed top-6 left-6 z-40 hidden">
+        <button id="toggle-menu-btn" class="glass-btn w-14 h-14 rounded-2xl flex items-center justify-center text-cyan-300 text-2xl shadow-xl hover:text-white">
+            <i class="fa-solid fa-bars-staggered"></i>
+        </button>
+    </div>
+
+    <!-- 5. MENÚ DESPLEGABLE LATERAL -->
+    <div id="side-menu" class="fixed top-0 left-0 h-full w-84 glass-panel z-40 transform -translate-x-full transition-transform duration-500 ease-in-out p-6 flex flex-col justify-between border-r border-cyan-500/40">
+        <div>
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-5 border-b border-cyan-500/30 mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-sliders text-cyan-400 text-xl"></i>
+                    <span class="font-orbitron text-lg font-bold text-cyan-300 tracking-wider">PANEL DE CONTROL VR</span>
+                </div>
+                <button id="close-menu-btn" class="text-cyan-400/60 hover:text-pink-500 text-xl transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-5">
+                <!-- Modo Navegación -->
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-cyan-900/60">
+                    <label class="font-orbitron text-xs text-cyan-400 tracking-wider block mb-3 uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad"></i> Modo de Control
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="mode-mouse-btn" class="px-3 py-2.5 text-xs font-bold rounded-lg border border-cyan-500 bg-cyan-500/30 text-cyan-200 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-mouse"></i> Mouse / Touch
+                        </button>
+                        <button id="mode-gyro-btn" class="px-3 py-2.5 text-xs font-bold rounded-lg border border-gray-700 bg-gray-800/40 text-gray-400 hover:border-cyan-500/50 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-mobile-screen"></i> Giroscopio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VR Split Screen Toggle -->
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-cyan-900/60 flex items-center justify-between">
+                    <div>
+                        <div class="font-orbitron text-sm text-cyan-300 font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-glasses text-pink-500"></i> Ver en Gafas VR
+                        </div>
+                        <div class="text-xs text-slate-400">Pantalla Dividida (Estereoscópico)</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="vr-split-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Control por Mirada Toggle -->
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-cyan-900/60 flex items-center justify-between">
+                    <div>
+                        <div class="font-orbitron text-sm text-cyan-300 font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-eye text-cyan-400"></i> Puntero por Mirada
+                        </div>
+                        <div class="text-xs text-slate-400">Autocarga en 3 segundos</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="gaze-pointer-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Reset Camera Button -->
+                <button id="reset-cam-btn" class="w-full glass-btn py-3 rounded-xl font-orbitron text-xs font-bold text-cyan-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrows-to-dot"></i> RECENTRAR CÁMARA VR
+                </button>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-cyan-500/20 text-center">
+            <div class="text-xs font-mono text-cyan-400/60">CYBERFLIX MATRIX SYSTEM</div>
+            <div class="text-[10px] text-slate-400 mt-1">Navega en 360° arrastrando o moviendo el móvil</div>
+        </div>
+    </div>
+
+    <!-- 6. CONTROLES DEL REPRODUCTOR CINE VR 360 -->
+    <div id="cinema-controls" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40 hidden w-full max-w-xl px-4">
+        <div class="glass-panel px-6 py-4 rounded-2xl flex flex-col gap-3 border border-pink-500/60 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+                    <span id="now-playing-title" class="font-orbitron text-sm text-cyan-300 font-bold tracking-wider truncate max-w-xs">
+                        REPRODUCIENDO...
+                    </span>
+                </div>
+                <button id="exit-cinema-btn" class="text-pink-400 hover:text-white font-orbitron text-xs font-bold flex items-center gap-2 px-4 py-2 rounded-xl border border-pink-500/40 bg-pink-500/20 transition">
+                    <i class="fa-solid fa-arrow-left"></i> SALIR DEL CINE VR
+                </button>
+            </div>
+            
+            <!-- Barra de Progreso de Video Simulado -->
+            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-cyan-500/30">
+                <div id="video-progress-bar" class="bg-gradient-to-r from-cyan-400 to-pink-500 h-full w-1/3 rounded-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. REPRODUCTOR DE VIDEO MINIATURA / CELEBRIDADES MS3 OVERLAY -->
+    <div id="celebrity-video-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden transition-all duration-300">
+        <!-- Contenedor Estilo Celular Vertical (Vertical Smartphone Format) -->
+        <div class="relative w-80 sm:w-96 glass-panel p-5 rounded-[40px] border-2 border-cyan-400 shadow-2xl flex flex-col gap-3">
+            <!-- Botón Cruz Cerrar en Esquina Superior Derecha -->
+            <button id="close-celebrity-modal" class="absolute -top-3 -right-3 w-10 h-10 bg-pink-600 hover:bg-pink-500 text-white rounded-full flex items-center justify-center text-lg shadow-lg border-2 border-white transition transform hover:scale-110 z-50">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Notch de Celular Futurista -->
+            <div class="w-24 h-4 bg-slate-900 border border-cyan-500/40 rounded-full mx-auto -mt-2 flex items-center justify-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                <span class="w-6 h-1 rounded-full bg-slate-700"></span>
+            </div>
+
+            <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
+                <div class="flex items-center gap-2.5">
+                    <img id="celeb-avatar-img" src="" class="w-9 h-9 rounded-full border border-cyan-400 object-cover" alt="Celeb">
+                    <div>
+                        <h3 id="celeb-name-title" class="font-orbitron text-cyan-300 font-bold text-sm truncate max-w-[140px]">FAMOSO MS3</h3>
+                        <span id="celeb-role-badge" class="text-[10px] text-pink-400 font-mono uppercase block">TRANSMISIÓN EXCLUSIVA</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/80 px-2.5 py-1 rounded-full border border-cyan-500/40">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> LIVE
+                </div>
+            </div>
+
+            <!-- Video Player HTML5 Formato Vertical (Aspect 9/16) -->
+            <div class="relative w-full aspect-[9/16] max-h-[60vh] bg-black rounded-3xl overflow-hidden border border-cyan-500/40 flex items-center justify-center shadow-inner">
+                <video id="celeb-active-video" class="w-full h-full object-cover" autoplay playsinline></video>
+                <div id="celeb-video-overlay-msg" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 gap-3 text-cyan-300 hidden">
+                    <i class="fa-solid fa-spinner animate-spin text-3xl text-pink-500"></i>
+                    <span class="font-orbitron text-xs">CARGANDO REEL...</span>
+                </div>
+            </div>
+
+            <!-- Controles Personalizados Móviles (Adelantar, Silenciar, Progreso) -->
+            <div class="flex flex-col gap-1.5 pt-1">
+                <div class="flex items-center gap-2">
+                    <span id="celeb-video-time" class="text-[10px] font-mono text-cyan-300">00:00 / 00:00</span>
+                    <input type="range" id="celeb-video-seekbar" min="0" max="100" value="0" class="w-full accent-cyan-400 h-1 bg-slate-800 rounded-lg cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button id="celeb-play-pause-btn" class="text-cyan-300 hover:text-white text-base">
+                            <i class="fa-solid fa-pause"></i>
+                        </button>
+                        <button id="celeb-mute-btn" class="text-cyan-300 hover:text-white text-base">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                    <div class="text-[10px] font-mono text-slate-400">
+                        Cierre automático
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS ESTRUCTURADA CON SECCIONES PRO Y PANTALLA PRINCIPAL ---
+        const CATEGORIES_DATA = {
+            'PROGRAMAS VR': {
+                hero: { id: 'prog_hero', title: 'VR UNIVERSE SHOW', category: 'PROGRAMA PRINCIPAL', desc: 'Edición especial de entretenimiento inmersivo 360° con tecnología holográfica.', color: '#00f0ff', bg: '#041d33', icon: 'fa-tv' },
+                rows: [
+                    {
+                        name: "PROGRAMAS DESTACADOS",
+                        items: [
+                            { id: 'prog1', title: 'CYBER LAB 360', category: 'TECNOLOGÍA', color: '#00f0ff', bg: '#021629', icon: 'fa-flask' },
+                            { id: 'prog2', title: 'FUTURO DIGITAL', category: 'DOCUMENTAL', color: '#00f0ff', bg: '#022038', icon: 'fa-microchip' },
+                            { id: 'prog3', title: 'UNIVERSO PARALELO', category: 'SCI-FI', color: '#00f0ff', bg: '#011224', icon: 'fa-atom' },
+                            { id: 'prog4', title: 'EXPEDICIÓN VR', category: 'AVENTURA', color: '#00f0ff', bg: '#032847', icon: 'fa-compass' }
+                        ]
+                    },
+                    {
+                        name: "NUEVAS TEMPORADAS VR",
+                        items: [
+                            { id: 'prog5', title: 'MUNDO HOLOGRÁFICO', category: 'SERIE', color: '#00ffcc', bg: '#002922', icon: 'fa-cube' },
+                            { id: 'prog6', title: 'IA Y HUMANIDAD', category: 'DEBATE', color: '#00ffcc', bg: '#001a15', icon: 'fa-brain' },
+                            { id: 'prog7', title: 'PLANETA NEÓN', category: 'ENTRETENIMIENTO', color: '#00ffcc', bg: '#00332a', icon: 'fa-globe' },
+                            { id: 'prog8', title: 'CÓDIGO VR', category: 'EDUCACIÓN', color: '#00ffcc', bg: '#00241e', icon: 'fa-code' }
+                        ]
+                    }
+                ]
+            },
+            'NOTICIAS EN VIVO': {
+                hero: { id: 'news_hero', title: 'MATRIX NEWS 24/7', category: 'NOTICIAS EN VIVO', desc: 'Transmisión holográfica directa desde el centro espacial global.', color: '#ff0055', bg: '#330010', icon: 'fa-newspaper' },
+                rows: [
+                    {
+                        name: "TRANSMISIONES EN DIRECTO",
+                        items: [
+                            { id: 'news1', title: 'GALAXY TODAY', category: 'INTERNACIONAL', color: '#ff0055', bg: '#29000a', icon: 'fa-broadcast-tower' },
+                            { id: 'news2', title: 'ÚLTIMA HORA MS3', category: 'ALERTA', color: '#ff0055', bg: '#400010', icon: 'fa-bolt' },
+                            { id: 'news3', title: 'MERCADOS CUÁNTICOS', category: 'FINANZAS', color: '#ff0055', bg: '#240008', icon: 'fa-chart-line' },
+                            { id: 'news4', title: 'REPORTE CLIMÁTICO', category: 'GLOBAL', color: '#ff0055', bg: '#33000d', icon: 'fa-cloud-sun' }
+                        ]
+                    },
+                    {
+                        name: "ANALISIS Y DEBATES EN VIVO",
+                        items: [
+                            { id: 'news5', title: 'POLÍTICA CIBERNÉTICA', category: 'ANÁLISIS', color: '#ff4400', bg: '#2e0d00', icon: 'fa-comments' },
+                            { id: 'news6', title: 'SALUD Y BIOTEC', category: 'CIENCIA', color: '#ff4400', bg: '#240a00', icon: 'fa-heartbeat' },
+                            { id: 'news7', title: 'ESPACIO PROFUNDI', category: 'EXPLORACIÓN', color: '#ff4400', bg: '#381000', icon: 'fa-satellite' },
+                            { id: 'news8', title: 'CUMBRE TECNOLÓGICA', category: 'EVENTO', color: '#ff4400', bg: '#1c0800', icon: 'fa-users' }
+                        ]
+                    }
+                ]
+            },
+            'STREAMING': {
+                hero: { id: 'str_hero', title: 'SYNTHWAVE LIVE STAGE', category: 'EVENTO EN VIVO', desc: 'Conciertos y festivales virtuales interactivos en formato 360°.', color: '#ff007f', bg: '#33001b', icon: 'fa-headset' },
+                rows: [
+                    {
+                        name: "CONCIERTOS Y MUSICA VR",
+                        items: [
+                            { id: 'str1', title: 'NEON GAMING ARENA', category: 'ESPORTS', color: '#ff007f', bg: '#290016', icon: 'fa-gamepad' },
+                            { id: 'str2', title: 'CYBER FEST 2099', category: 'CONCIERTO', color: '#ff007f', bg: '#400022', icon: 'fa-music' },
+                            { id: 'str3', title: 'DJ MATRIX NIGHT', category: 'DJ SET', color: '#ff007f', bg: '#210012', icon: 'fa-sliders' },
+                            { id: 'str4', title: 'ACOUSTIC SPACE', category: 'EN VIVO', color: '#ff007f', bg: '#36001d', icon: 'fa-guitar' }
+                        ]
+                    },
+                    {
+                        name: "GAMEPLAY & STREAMERS",
+                        items: [
+                            { id: 'str5', title: 'SPEEDRUN OVERDRIVE', category: 'GAMING', color: '#d400ff', bg: '#26002e', icon: 'fa-trophy' },
+                            { id: 'str6', title: 'VR CHAT SHOW', category: 'TALK SHOW', color: '#d400ff', bg: '#1d0024', icon: 'fa-headphone-vr' },
+                            { id: 'str7', title: 'CREATIVE BUILDERS', category: 'ARTE 3D', color: '#d400ff', bg: '#31003b', icon: 'fa-palette' },
+                            { id: 'str8', title: 'SIMULADOR DE VUELO', category: 'SIMULACIÓN', color: '#d400ff', bg: '#17001c', icon: 'fa-plane' }
+                        ]
+                    }
+                ]
+            },
+            'FAMOSOS DE MS3': {
+                isCircleSection: true,
+                celebrities: [
+                    { id: 'celeb1', name: 'NEO CYBER', role: 'ARTISTA 3D', avatarColor: '#00f0ff', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+                    { id: 'celeb2', name: 'LUNA STAR', role: 'DJ VIRTUAL', avatarColor: '#ff007f', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4' },
+                    { id: 'celeb3', name: 'AURA MS3', role: 'STREAMER VIP', avatarColor: '#9d00ff', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4' },
+                    { id: 'celeb4', name: 'KAI ZERO', role: 'CIBER PILOTO', avatarColor: '#00ffcc', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoylikes.mp4' },
+                    { id: 'celeb5', name: 'ELENA NOVA', role: 'INFLUENCER', avatarColor: '#ffb700', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4' },
+                    { id: 'celeb6', name: 'MAX OVERDRIVE', role: 'GAMER PRO', avatarColor: '#ff0055', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4' },
+                    { id: 'celeb7', name: 'ZARA MATRIX', role: 'MODA VR', avatarColor: '#00a6ff', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackBranding.mp4' },
+                    { id: 'celeb8', name: 'ORION CODE', role: 'DEVELOPER', avatarColor: '#33ff00', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' },
+                    { id: 'celeb9', name: 'VALERIA VORTEX', role: 'CANTANTE', avatarColor: '#e100ff', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4' },
+                    { id: 'celeb10', name: 'TITAN MS3', role: 'HOST OFICIAL', avatarColor: '#ff6600', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4' }
+                ]
+            }
+        };
+
+        const CATALOG_SECTIONS = [
+            {
+                name: "TENDENCIAS VR 360°",
+                type: "row",
+                yPos: 1.2,
+                items: [
+                    { id: 't1', title: 'NEBULA ODYSSEY', category: 'SCI-FI', color: '#00f0ff', bg: '#021629', icon: 'fa-user-astronaut' },
+                    { id: 't2', title: 'SYNTHWAVE RUNNER', category: 'MUSICAL', color: '#ff007f', bg: '#290016', icon: 'fa-compact-disc' },
+                    { id: 't3', title: 'QUANTUM MATRIX', category: 'THRILLER', color: '#9d00ff', bg: '#180029', icon: 'fa-brain' },
+                    { id: 't4', title: 'DEEP SPACE EXPLORER', category: 'DOCU', color: '#00ff88', bg: '#002914', icon: 'fa-shuttle-space' }
+                ]
+            },
+            {
+                name: "DOCUMENTALES Y CINE ESPACIAL",
+                type: "row",
+                yPos: -2.2,
+                items: [
+                    { id: 'd1', title: 'BLACK HOLE SURVIVAL', category: 'ASTRONOMÍA', color: '#ffb700', bg: '#291e00', icon: 'fa-atom' },
+                    { id: 'd2', title: 'AI SINGULARITY', category: 'TECNOLOGÍA', color: '#00a6ff', bg: '#001929', icon: 'fa-microchip' },
+                    { id: 'd3', title: 'GALACTIC SPEEDS', category: 'CARRERAS VR', color: '#ff0044', bg: '#29000a', icon: 'fa-bolt' },
+                    { id: 'd4', title: 'ALIEN ECOSYSTEMS', category: 'NATURALEZA 360', color: '#00ffcc', bg: '#002922', icon: 'fa-dna' }
+                ]
+            }
+        ];
+
+        // --- ESTADO Y VARIABLES GLOBALES THREE.JS ---
+        let scene, camera, renderer;
+        let starField, nebulaParticles;
+        let screenMeshes = [];
+        let categoryButtonsMeshes = [];
+        let heroScreenMesh = null;
+        let activeCategory = 'PROGRAMAS VR';
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        // Estado del Multiverso VR
+        let isUniverseActive = false;
+        let isCinematicMode = false;
+        let activeMediaMesh = null;
+        let originalMeshTransform = {};
+
+        // Controles de Cámara (Inercia sin mareo)
+        let useGyro = false;
+        let isMouseDown = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let targetRotation = { x: 0, y: 0 };
+        let currentRotation = { x: 0, y: 0 };
+
+        // Puntero de Mirada (Gaze 3s)
+        let gazeEnabled = false;
+        let gazeHoveredMesh = null;
+        let gazeStartTime = 0;
+        const GAZE_DURATION = 3000;
+
+        // Modo Estereoscópico VR
+        let isStereoVR = false;
+
+        // Reproductor de cine simulado (Ecualizador animado)
+        let simulatedVideoTime = 0;
+
+        // --- INICIALIZACIÓN PRINCIPAL ---
+        function initEngine() {
+            const container = document.getElementById('webgl-container');
+
+            // 1. Escena 3D
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x02020b, 0.009);
+
+            // 2. Cámara VR
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 0.1);
+
+            // 3. Renderer WebGL
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            container.appendChild(renderer.domElement);
+
+            // 4. Luces Ambientales de Neón Vivas
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(ambientLight);
+
+            const cyanLight = new THREE.PointLight(0x00f0ff, 4.0, 80);
+            cyanLight.position.set(0, 10, -5);
+            scene.add(cyanLight);
+
+            const magentaLight = new THREE.PointLight(0xff007f, 4.0, 80);
+            magentaLight.position.set(0, -10, -5);
+            scene.add(magentaLight);
+
+            // 5. Crear Campo de Estrellas y Nebulosa Neón Futurista
+            createFuturisticStarfield();
+
+            // 6. Construir las Pantallas Flotantes por Segmentos
+            buildVRInterface();
+
+            // Setup Listeners
+            window.addEventListener('resize', onWindowResize);
+            setupInteractions();
+        }
+
+        // --- CAMPO DE ESTRELLAS Y NEBULOSA CON COLORES NEÓN VIBRANTES ---
+        function createFuturisticStarfield() {
+            const count = 6500;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            const palette = [
+                new THREE.Color('#00f0ff'),
+                new THREE.Color('#ff007f'),
+                new THREE.Color('#7b00ff'),
+                new THREE.Color('#00ffcc'),
+                new THREE.Color('#ffffff')
+            ];
+
+            for (let i = 0; i < count; i++) {
+                const radius = 90 + Math.random() * 120;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+
+                positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i * 3 + 2] = radius * Math.cos(phi);
+
+                const c = palette[Math.floor(Math.random() * palette.length)];
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const g = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            g.addColorStop(0, 'rgba(255,255,255,1)');
+            g.addColorStop(0.4, 'rgba(0,240,255,0.6)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0,0,16,16);
+
+            const starTexture = new THREE.CanvasTexture(canvas);
+
+            const material = new THREE.PointsMaterial({
+                size: 1.8,
+                vertexColors: true,
+                map: starTexture,
+                transparent: true,
+                opacity: 0.9,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            starField = new THREE.Points(geometry, material);
+            scene.add(starField);
+
+            // Nube de Nebulosa Ciberpunk
+            const nebCount = 600;
+            const nebGeo = new THREE.BufferGeometry();
+            const nebPos = new Float32Array(nebCount * 3);
+            const nebCol = new Float32Array(nebCount * 3);
+            const nebPalette = [new THREE.Color('#00f0ff'), new THREE.Color('#ff007f'), new THREE.Color('#8000ff')];
+
+            for (let i = 0; i < nebCount; i++) {
+                const r = 40 + Math.random() * 70;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+
+                nebPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                nebPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+                nebPos[i * 3 + 2] = r * Math.cos(phi);
+
+                const c = nebPalette[Math.floor(Math.random() * nebPalette.length)];
+                nebCol[i * 3] = c.r;
+                nebCol[i * 3 + 1] = c.g;
+                nebCol[i * 3 + 2] = c.b;
+            }
+
+            nebGeo.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
+            nebGeo.setAttribute('color', new THREE.BufferAttribute(nebCol, 3));
+
+            const nebMat = new THREE.PointsMaterial({
+                size: 12.0,
+                vertexColors: true,
+                map: starTexture,
+                transparent: true,
+                opacity: 0.25,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            nebulaParticles = new THREE.Points(nebGeo, nebMat);
+            scene.add(nebulaParticles);
+        }
+
+        // --- CREAR MESH DE BOTÓN DE CATEGORÍA ---
+        function createCategoryButtonMesh(catName, isSelected) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            const bgColor = isSelected ? '#ff007f' : '#081a2d';
+            const borderColor = isSelected ? '#ffffff' : '#00f0ff';
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 36px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(catName, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const geometry = new THREE.PlaneGeometry(3.2, 0.8);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.userData = {
+                type: 'category_btn',
+                category: catName,
+                initialRot: new THREE.Euler()
+            };
+
+            return mesh;
+        }
+
+        // --- CREA LA MALLA MESH 3D PARA CADA PANTALLA ---
+        function createScreenMesh(item, width, height, isHero) {
+            const texture = generateVideoCanvasTexture(item, isHero);
+            const geometry = new THREE.PlaneGeometry(width, height);
+
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                roughness: 0.2,
+                metalness: 0.8,
+                emissiveMap: texture,
+                emissive: new THREE.Color(item.color).multiplyScalar(0.25),
+                side: THREE.DoubleSide
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Borde resplandeciente de neón alrededor de la pantalla
+            const frameGeo = new THREE.PlaneGeometry(width + 0.15, height + 0.15);
+            const frameMat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(item.color),
+                side: THREE.BackSide,
+                transparent: true,
+                opacity: 0.6
+            });
+            const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+            frameMesh.position.z = -0.02;
+            mesh.add(frameMesh);
+
+            mesh.userData = {
+                type: 'screen',
+                media: item,
+                isHero: isHero,
+                isHovered: false,
+                initialRot: new THREE.Euler()
+            };
+
+            return mesh;
+        }
+
+        // --- CONSTRUCCIÓN DE PANTALLAS Y BOTONES EN EL ESPACIO 3D ---
+        function buildVRInterface() {
+            // Limpiar pantallas existentes si se cambia de categoría
+            screenMeshes.forEach(mesh => scene.remove(mesh));
+            categoryButtonsMeshes.forEach(mesh => scene.remove(mesh));
+            screenMeshes = [];
+            categoryButtonsMeshes = [];
+
+            const radius = 12;
+            const catData = CATEGORIES_DATA[activeCategory] || CATEGORIES_DATA['PROGRAMAS VR'];
+
+            // CASO ESPECIAL: SECCIÓN FAMOSOS DE MS3 (10 CÍRCULOS)
+            if (catData.isCircleSection) {
+                const celebs = catData.celebrities;
+                
+                // Distribuir en 2 filas semicirculares con mayor separación espacial
+                celebs.forEach((celeb, idx) => {
+                    const isTopRow = idx < 5;
+                    const posInRow = isTopRow ? idx : idx - 5;
+                    
+                    const angleStep = 0.45; // Mayor separación horizontal
+                    const startAngle = -((5 - 1) * angleStep) / 2;
+                    const angle = startAngle + posInRow * angleStep;
+                    const yPos = isTopRow ? 2.8 : -1.2; // Mayor separación vertical
+
+                    const circleMesh = createCelebrityCircleMesh(celeb);
+                    circleMesh.position.x = radius * Math.sin(angle);
+                    circleMesh.position.y = yPos;
+                    circleMesh.position.z = -radius * Math.cos(angle);
+                    circleMesh.lookAt(0, yPos, 0);
+                    circleMesh.userData.initialRot.copy(circleMesh.rotation);
+
+                    scene.add(circleMesh);
+                    screenMeshes.push(circleMesh);
+                });
+            } else {
+                // 1. GRAN PANTALLA PRINCIPAL (HERO SCREEN CENTRAL EXPANDIDA DE PUNTA A PUNTA)
+                const heroData = catData.hero;
+                // Dimensiones ampliadas: ancho a 24.0 y alto a 9.2 para mayor amplitud panorámica
+                const heroMesh = createScreenMesh(heroData, 24.0, 9.2, true);
+                
+                // Ubicada a radio 15.0 y altura y: 8.5 (separada más hacia arriba)
+                const heroRadius = 15.0;
+                const heroAngle = 0;
+                heroMesh.position.x = heroRadius * Math.sin(heroAngle);
+                heroMesh.position.y = 8.5;
+                heroMesh.position.z = -heroRadius * Math.cos(heroAngle);
+                
+                // Pantalla completamente derecha sin inclinación
+                heroMesh.rotation.set(0, 0, 0);
+                heroMesh.userData.initialRot.copy(heroMesh.rotation);
+
+                scene.add(heroMesh);
+                screenMeshes.push(heroMesh);
+                heroScreenMesh = heroMesh;
+
+                // 2. FILAS DE PANTALLAS SECUNDARIAS CATEGORIZADAS (MÁS SEPARADAS ENTRE SÍ)
+                catData.rows.forEach((row, rowIndex) => {
+                    const yPos = rowIndex === 0 ? 0.2 : -3.6; // Mayor separación vertical entre filas
+                    const itemCount = row.items.length;
+                    const angleStep = 0.42; // Mayor separación horizontal entre tarjetas
+                    const startAngle = -((itemCount - 1) * angleStep) / 2;
+
+                    row.items.forEach((item, itemIndex) => {
+                        const angle = startAngle + itemIndex * angleStep;
+                        const mesh = createScreenMesh(item, 3.8, 2.2, false);
+
+                        mesh.position.x = radius * Math.sin(angle);
+                        mesh.position.y = yPos;
+                        mesh.position.z = -radius * Math.cos(angle);
+                        mesh.lookAt(0, yPos, 0);
+                        mesh.userData.initialRot.copy(mesh.rotation);
+
+                        scene.add(mesh);
+                        screenMeshes.push(mesh);
+                    });
+                });
+            }
+
+            // 3. BOTONES HORIZONTALES NEÓN DE CATEGORÍAS (CON SEPARACIÓN ADECUADA)
+            const categories = Object.keys(CATEGORIES_DATA);
+            const btnCount = categories.length;
+            const btnAngleStep = 0.34; // Mayor espacio entre botones
+            const btnStartAngle = -((btnCount - 1) * btnAngleStep) / 2;
+            const btnYPos = -6.2;
+
+            categories.forEach((catName, index) => {
+                const angle = btnStartAngle + index * btnAngleStep;
+                const isSelected = catName === activeCategory;
+                
+                const btnMesh = createCategoryButtonMesh(catName, isSelected);
+                btnMesh.position.x = (radius - 0.5) * Math.sin(angle);
+                btnMesh.position.y = btnYPos;
+                btnMesh.position.z = -(radius - 0.5) * Math.cos(angle);
+                btnMesh.lookAt(0, btnYPos, 0);
+
+                scene.add(btnMesh);
+                categoryButtonsMeshes.push(btnMesh);
+                screenMeshes.push(btnMesh); // Agregado a raycaster
+            });
+        }
+
+        // --- CREAR MESH CIRCULAR PARA CELEBRIDADES DE MS3 ---
+        function createCelebrityCircleMesh(celeb) {
+            const radiusSize = 1.3;
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Círculo de fondo degradado
+            const grad = ctx.createRadialGradient(256, 256, 10, 256, 256, 256);
+            grad.addColorStop(0, celeb.avatarColor || '#00f0ff');
+            grad.addColorStop(0.7, '#08001a');
+            grad.addColorStop(1, '#000000');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(256, 256, 240, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Borde Neón Circular
+            ctx.strokeStyle = celeb.avatarColor || '#00f0ff';
+            ctx.lineWidth = 14;
+            ctx.stroke();
+
+            // Avatar Icon
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 120px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(celeb.name.charAt(0), 256, 210);
+
+            // Nombre
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 36px Orbitron';
+            ctx.fillText(celeb.name, 256, 350);
+
+            // Rol / Subtítulo
+            ctx.fillStyle = celeb.avatarColor || '#00f0ff';
+            ctx.font = 'bold 24px Rajdhani';
+            ctx.fillText(celeb.role, 256, 395);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const geometry = new THREE.CircleGeometry(radiusSize, 64);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Anillo resplandeciente exterior
+            const ringGeo = new THREE.RingGeometry(radiusSize + 0.05, radiusSize + 0.15, 64);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(celeb.avatarColor),
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.8
+            });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.position.z = -0.01;
+            mesh.add(ringMesh);
+
+            mesh.userData = {
+                type: 'celebrity_circle',
+                celebrity: celeb,
+                initialRot: new THREE.Euler()
+            };
+
+            return mesh;
+        }
+
+        // --- GENERADOR DE TEXTURA CANVAS DE VIDEO DE ALTA DEFINICIÓN ---
+        function generateVideoCanvasTexture(item, isHero) {
+            const canvas = document.createElement('canvas');
+            canvas.width = isHero ? 1024 : 512;
+            canvas.height = isHero ? 512 : 288;
+            const ctx = canvas.getContext('2d');
+
+            // Fondo degradado futurista
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, item.bg || '#041d33');
+            gradient.addColorStop(0.5, '#020b14');
+            gradient.addColorStop(1, '#080010');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Rejilla Cyberpunk de fondo
+            ctx.strokeStyle = item.color || '#00f0ff';
+            ctx.globalAlpha = 0.15;
+            ctx.lineWidth = 2;
+            const step = isHero ? 40 : 25;
+            for (let x = 0; x < canvas.width; x += step) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += step) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Marco interno
+            ctx.strokeStyle = item.color || '#00f0ff';
+            ctx.lineWidth = isHero ? 8 : 4;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+            // Icono Central / Badge
+            ctx.fillStyle = item.color || '#00f0ff';
+            ctx.font = isHero ? 'bold 28px Orbitron' : 'bold 16px Orbitron';
+            ctx.fillText(item.category || 'VR 360°', 30, isHero ? 60 : 40);
+
+            // Título Principal Alta Visibilidad
+            ctx.fillStyle = '#ffffff';
+            ctx.font = isHero ? 'black 54px Orbitron' : 'bold 28px Orbitron';
+            ctx.fillText(item.title, 30, isHero ? 130 : 90);
+
+            if (isHero && item.desc) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = '22px Rajdhani';
+                ctx.fillText(item.desc, 30, 180);
+            }
+
+            // Botón de Reproducir en Holograma
+            const btnY = canvas.height - (isHero ? 90 : 50);
+            ctx.fillStyle = item.color || '#00f0ff';
+            ctx.fillRect(30, btnY, isHero ? 240 : 160, isHero ? 50 : 32);
+
+            ctx.fillStyle = '#000000';
+            ctx.font = isHero ? 'bold 22px Orbitron' : 'bold 14px Orbitron';
+            ctx.fillText('► REPRODUCIR', 45, btnY + (isHero ? 32 : 22));
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- INTERACCIONES, MOUSE Y RAYCASTER ---
+        function setupInteractions() {
+            const container = document.getElementById('webgl-container');
+
+            document.getElementById('enter-btn').addEventListener('click', enterUniverse);
+
+            container.addEventListener('mousedown', (e) => {
+                isMouseDown = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                if (isMouseDown && !useGyro) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+
+                    targetRotation.y += deltaX * 0.003;
+                    targetRotation.x += deltaY * 0.003;
+
+                    // Limitar rotación vertical para estabilidad
+                    targetRotation.x = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, targetRotation.x));
+
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+
+            container.addEventListener('mouseup', () => { isMouseDown = false; });
+            container.addEventListener('click', handleVRClick);
+
+            // Touch events para móviles
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isMouseDown = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (isMouseDown && !useGyro && e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                    const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                    targetRotation.y += deltaX * 0.003;
+                    targetRotation.x += deltaY * 0.003;
+                    targetRotation.x = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, targetRotation.x));
+
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchend', () => { isMouseDown = false; });
+
+            // Eventos del Panel Lateral y Controles
+            document.getElementById('toggle-menu-btn').addEventListener('click', () => {
+                document.getElementById('side-menu').classList.remove('-translate-x-full');
+            });
+
+            document.getElementById('close-menu-btn').addEventListener('click', () => {
+                document.getElementById('side-menu').classList.add('-translate-x-full');
+            });
+
+            document.getElementById('mode-mouse-btn').addEventListener('click', () => {
+                useGyro = false;
+                document.getElementById('mode-mouse-btn').className = "px-3 py-2.5 text-xs font-bold rounded-lg border border-cyan-500 bg-cyan-500/30 text-cyan-200 flex items-center justify-center gap-2";
+                document.getElementById('mode-gyro-btn').className = "px-3 py-2.5 text-xs font-bold rounded-lg border border-gray-700 bg-gray-800/40 text-gray-400 hover:border-cyan-500/50 flex items-center justify-center gap-2";
+            });
+
+            document.getElementById('mode-gyro-btn').addEventListener('click', () => {
+                if (window.DeviceOrientationEvent) {
+                    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        DeviceOrientationEvent.requestPermission().then(state => {
+                            if (state === 'granted') enableGyro();
+                        });
+                    } else {
+                        enableGyro();
+                    }
+                }
+            });
+
+            document.getElementById('gaze-pointer-toggle').addEventListener('change', (e) => {
+                gazeEnabled = e.target.checked;
+                document.getElementById('gaze-cursor-container').style.display = gazeEnabled ? 'block' : 'none';
+            });
+
+            document.getElementById('reset-cam-btn').addEventListener('click', () => {
+                targetRotation = { x: 0, y: 0 };
+            });
+
+            document.getElementById('exit-cinema-btn').addEventListener('click', exitCinematicMode);
+
+            // Listeners del Reproductor de Celebridades MS3
+            setupCelebrityVideoPlayerControls();
+        }
+
+        function enableGyro() {
+            useGyro = true;
+            document.getElementById('mode-gyro-btn').className = "px-3 py-2.5 text-xs font-bold rounded-lg border border-cyan-500 bg-cyan-500/30 text-cyan-200 flex items-center justify-center gap-2";
+            document.getElementById('mode-mouse-btn').className = "px-3 py-2.5 text-xs font-bold rounded-lg border border-gray-700 bg-gray-800/40 text-gray-400 hover:border-cyan-500/50 flex items-center justify-center gap-2";
+
+            window.addEventListener('deviceorientation', (e) => {
+                if (!useGyro) return;
+                if (e.gamma !== null && e.beta !== null) {
+                    targetRotation.y = (e.gamma * Math.PI) / 180;
+                    targetRotation.x = ((e.beta - 45) * Math.PI) / 180;
+                }
+            });
+        }
+
+        // --- SISTEMA DE CONTROL DEL VIDEO MODAL CELEBRIDADES MS3 ---
+        function setupCelebrityVideoPlayerControls() {
+            const modal = document.getElementById('celebrity-video-modal');
+            const closeBtn = document.getElementById('close-celebrity-modal');
+            const video = document.getElementById('celeb-active-video');
+            const playPauseBtn = document.getElementById('celeb-play-pause-btn');
+            const muteBtn = document.getElementById('celeb-mute-btn');
+            const seekbar = document.getElementById('celeb-video-seekbar');
+            const timeLabel = document.getElementById('celeb-video-time');
+
+            // Cerrar con botón X superior derecho
+            closeBtn.addEventListener('click', closeCelebrityVideo);
+
+            // Reproducción / Pausa
+            playPauseBtn.addEventListener('click', () => {
+                if (video.paused) {
+                    video.play();
+                    playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                } else {
+                    video.pause();
+                    playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                }
+            });
+
+            // Silenciar / Activar Sonido
+            muteBtn.addEventListener('click', () => {
+                video.muted = !video.muted;
+                muteBtn.innerHTML = video.muted ? 
+                    '<i class="fa-solid fa-volume-xmark text-pink-500"></i>' : 
+                    '<i class="fa-solid fa-volume-high"></i>';
+            });
+
+            // Adelantar / Buscar tiempo
+            seekbar.addEventListener('input', () => {
+                if (video.duration) {
+                    const seekTo = (seekbar.value / 100) * video.duration;
+                    video.currentTime = seekTo;
+                }
+            });
+
+            // Actualización del progreso
+            video.addEventListener('timeupdate', () => {
+                if (video.duration) {
+                    const pct = (video.currentTime / video.duration) * 100;
+                    seekbar.value = pct;
+
+                    const curMins = Math.floor(video.currentTime / 60);
+                    const curSecs = Math.floor(video.currentTime % 60).toString().padStart(2, '0');
+                    const durMins = Math.floor(video.duration / 60);
+                    const durSecs = Math.floor(video.duration % 60).toString().padStart(2, '0');
+                    timeLabel.innerText = `${curMins}:${curSecs} / ${durMins}:${durSecs}`;
+                }
+            });
+
+            // Al finalizar el video se cierra automáticamente
+            video.addEventListener('ended', closeCelebrityVideo);
+        }
+
+        function openCelebrityVideo(celeb) {
+            const modal = document.getElementById('celebrity-video-modal');
+            const video = document.getElementById('celeb-active-video');
+            const nameTitle = document.getElementById('celeb-name-title');
+            const roleBadge = document.getElementById('celeb-role-badge');
+            const avatarImg = document.getElementById('celeb-avatar-img');
+
+            nameTitle.innerText = celeb.name;
+            roleBadge.innerText = celeb.role;
+            avatarImg.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${celeb.name}`;
+
+            video.src = celeb.videoUrl;
+            video.muted = false;
+
+            modal.classList.remove('hidden');
+
+            // Autoreproducción con fallback silenciado en caso de bloqueo del navegador
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    video.muted = true;
+                    video.play();
+                });
+            }
+        }
+
+        function closeCelebrityVideo() {
+            const modal = document.getElementById('celebrity-video-modal');
+            const video = document.getElementById('celeb-active-video');
+
+            video.pause();
+            video.src = '';
+            modal.classList.add('hidden');
+        }
+
+        // --- NAVEGACIÓN Y CLICS EN PANTALLAS O CATEGORÍAS ---
+        function handleVRClick() {
+            if (!isUniverseActive) return;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(screenMeshes, true);
+
+            if (intersects.length > 0) {
+                let hitMesh = intersects[0].object;
+                while (hitMesh.parent && hitMesh.parent !== scene) {
+                    if (hitMesh.userData && hitMesh.userData.type) break;
+                    hitMesh = hitMesh.parent;
+                }
+
+                if (hitMesh.userData.type === 'category_btn') {
+                    // Cambiar Categoría Activa
+                    activeCategory = hitMesh.userData.category;
+                    buildVRInterface();
+                } else if (hitMesh.userData.type === 'celebrity_circle') {
+                    // Abrir Modal de Famosos con Video Autoreproducible
+                    openCelebrityVideo(hitMesh.userData.celebrity);
+                } else if (hitMesh.userData.type === 'screen' && !isCinematicMode) {
+                    // Abrir pantalla completa / Modo Cine
+                    openCinematicMode(hitMesh);
+                }
+            }
+        }
+
+        function enterUniverse() {
+            document.getElementById('welcome-screen').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('ui-hud').classList.remove('hidden');
+                isUniverseActive = true;
+            }, 1000);
+        }
+
+        // --- MODO CINE COMPLETO VR ---
+        function openCinematicMode(mesh) {
+            isCinematicMode = true;
+            activeMediaMesh = mesh;
+            originalMeshTransform = {
+                position: mesh.position.clone(),
+                rotation: mesh.rotation.clone(),
+                scale: mesh.scale.clone()
+            };
+
+            // Animación Hacia la Vista del Espectador
+            mesh.position.set(0, 0, -3.2);
+            mesh.rotation.set(0, 0, 0);
+            mesh.scale.set(1.8, 1.8, 1.8);
+
+            document.getElementById('now-playing-title').innerText = mesh.userData.media.title;
+            document.getElementById('cinema-controls').classList.remove('hidden');
+        }
+
+        function exitCinematicMode() {
+            if (!isCinematicMode || !activeMediaMesh) return;
+
+            activeMediaMesh.position.copy(originalMeshTransform.position);
+            activeMediaMesh.rotation.copy(originalMeshTransform.rotation);
+            activeMediaMesh.scale.copy(originalMeshTransform.scale);
+
+            document.getElementById('cinema-controls').classList.add('hidden');
+            isCinematicMode = false;
+            activeMediaMesh = null;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- BUCLE DE ANIMACIÓN Y RENDER 3D ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Movimiento suave del campo espacial
+            if (starField) starField.rotation.y += 0.0003;
+            if (nebulaParticles) nebulaParticles.rotation.y -= 0.0002;
+
+            // Inercia de la Cámara VR
+            currentRotation.x += (targetRotation.x - currentRotation.x) * 0.05;
+            currentRotation.y += (targetRotation.y - currentRotation.y) * 0.05;
+
+            camera.rotation.x = currentRotation.x;
+            camera.rotation.y = currentRotation.y;
+
+            // Lógica de Puntero por Mirada (Gaze Cursor)
+            if (gazeEnabled && isUniverseActive && !isCinematicMode) {
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(screenMeshes, true);
+
+                if (intersects.length > 0) {
+                    let target = intersects[0].object;
+                    while (target.parent && target.parent !== scene) {
+                        if (target.userData && target.userData.type) break;
+                        target = target.parent;
+                    }
+
+                    if (gazeHoveredMesh !== target) {
+                        gazeHoveredMesh = target;
+                        gazeStartTime = Date.now();
+                    } else {
+                        const elapsed = Date.now() - gazeStartTime;
+                        const progress = Math.min(elapsed / GAZE_DURATION, 1);
+                        document.getElementById('gaze-progress').style.transform = `translate(-50%, -50%) rotate(${progress * 360}deg)`;
+
+                        if (progress >= 1) {
+                            handleVRClick();
+                            gazeStartTime = Date.now(); // Reset
+                        }
+                    }
+                } else {
+                    gazeHoveredMesh = null;
+                    document.getElementById('gaze-progress').style.transform = 'translate(-50%, -50%) rotate(0deg)';
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Iniciar Motor cuando la ventana cargue
+        window.onload = () => {
+            initEngine();
+            animate();
+        };
+    </script>
+</body>
+</html>
