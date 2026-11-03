@@ -716,13 +716,8 @@
             const texture = generateVideoCanvasTexture(item, isHero);
             const geometry = new THREE.PlaneGeometry(width, height);
 
-            const material = new THREE.MeshStandardMaterial({
+            const material = new THREE.MeshBasicMaterial({
                 map: texture,
-                transparent: true,
-                roughness: 0.2,
-                metalness: 0.8,
-                emissiveMap: texture,
-                emissive: new THREE.Color(item.color).multiplyScalar(0.25),
                 side: THREE.DoubleSide
             });
 
@@ -731,14 +726,20 @@
             // Borde resplandeciente de neón alrededor de la pantalla
             const frameGeo = new THREE.PlaneGeometry(width + 0.15, height + 0.15);
             const frameMat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(item.color),
+                color: new THREE.Color(item.color || '#00f0ff'),
                 side: THREE.BackSide,
                 transparent: true,
-                opacity: 0.6
+                opacity: 0.8
             });
             const frameMesh = new THREE.Mesh(frameGeo, frameMat);
             frameMesh.position.z = -0.02;
             mesh.add(frameMesh);
+
+            // Título flotante debajo de la pantalla
+            const labelMesh = createTitleLabelMesh(item, width);
+            labelMesh.position.y = - (height / 2 + (isHero ? 0.8 : 0.45));
+            labelMesh.position.z = 0.05;
+            mesh.add(labelMesh);
 
             mesh.userData = {
                 type: 'screen',
@@ -749,6 +750,42 @@
             };
 
             return mesh;
+        }
+
+        // --- MESH DE TÍTULO DEBAJO DE LA PANTALLA ---
+        function createTitleLabelMesh(item, screenWidth) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Título Principal
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 42px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(item.title, canvas.width / 2, 10, canvas.width - 40);
+
+            // Subtítulo / Conducción
+            if (item.category || item.desc) {
+                const subtext = item.desc || item.category;
+                ctx.fillStyle = item.color || '#00f0ff';
+                ctx.font = '600 28px Rajdhani';
+                ctx.fillText(subtext, canvas.width / 2, 70, canvas.width - 40);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const labelHeight = screenWidth * (200 / 1024);
+            const geometry = new THREE.PlaneGeometry(screenWidth, labelHeight);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+
+            return new THREE.Mesh(geometry, material);
         }
 
         // --- CONSTRUCCIÓN DE PANTALLAS Y BOTONES EN EL ESPACIO 3D ---
@@ -942,83 +979,26 @@
             const texture = new THREE.CanvasTexture(canvas);
 
             function renderCanvas(img = null) {
-                // Fondo degradado futurista
-                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                gradient.addColorStop(0, item.bg || '#041d33');
-                gradient.addColorStop(0.5, '#020b14');
-                gradient.addColorStop(1, '#080010');
-                ctx.fillStyle = gradient;
+                // Limpiar fondo sin cuadrillé ni patrones
+                ctx.fillStyle = item.bg || '#041d33';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Si hay imagen de portada local/remota, renderizarla de fondo
+                // Dibujar imagen de portada limpia y directa de punta a punta sin capas de opacidad
                 if (img) {
                     try {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        // Overlay de graduado para asegurar legibilidad de títulos
-                        const imgOverlay = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                        imgOverlay.addColorStop(0, 'rgba(0,0,0,0.4)');
-                        imgOverlay.addColorStop(0.5, 'rgba(0,0,0,0.2)');
-                        imgOverlay.addColorStop(1, 'rgba(0,0,0,0.85)');
-                        ctx.fillStyle = imgOverlay;
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
                     } catch(e) {
                         console.warn('Cover image render fallback:', e);
                     }
-                } else {
-                    // Rejilla Cyberpunk de fondo
-                    ctx.strokeStyle = item.color || '#00f0ff';
-                    ctx.globalAlpha = 0.15;
-                    ctx.lineWidth = 2;
-                    const step = isHero ? 40 : 25;
-                    for (let x = 0; x < canvas.width; x += step) {
-                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-                    }
-                    for (let y = 0; y < canvas.height; y += step) {
-                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-                    }
-                    ctx.globalAlpha = 1.0;
                 }
-
-                // Marco interno neón
-                ctx.strokeStyle = item.color || '#00f0ff';
-                ctx.lineWidth = isHero ? 8 : 4;
-                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
-                // Categoria / Subtítulo
-                ctx.fillStyle = item.color || '#00f0ff';
-                ctx.font = isHero ? 'bold 24px Orbitron' : 'bold 13px Orbitron';
-                ctx.fillText((item.category || 'VR 360°').toUpperCase(), 25, isHero ? 50 : 35);
-
-                // Título Principal Alta Visibilidad
-                ctx.fillStyle = '#ffffff';
-                ctx.font = isHero ? 'black 48px Orbitron' : 'bold 22px Orbitron';
-                
-                // Truncar o envolver texto si es muy largo
-                const maxW = canvas.width - 50;
-                ctx.fillText(item.title, 25, isHero ? 110 : 75, maxW);
-
-                if (isHero && item.desc) {
-                    ctx.fillStyle = '#00f0ff';
-                    ctx.font = 'bold 24px Rajdhani';
-                    ctx.fillText(item.desc, 25, 160, maxW);
-                }
-
-                // Botón de Reproducir en Holograma
-                const btnY = canvas.height - (isHero ? 80 : 45);
-                ctx.fillStyle = item.color || '#00f0ff';
-                ctx.fillRect(25, btnY, isHero ? 220 : 140, isHero ? 45 : 28);
-
-                ctx.fillStyle = '#000000';
-                ctx.font = isHero ? 'bold 20px Orbitron' : 'bold 12px Orbitron';
-                ctx.fillText('► REPRODUCIR', 35, btnY + (isHero ? 28 : 19));
 
                 texture.needsUpdate = true;
             }
 
-            // Iniciar render inicial sin imagen
+            // Render inicial
             renderCanvas();
 
-            // Cargar imagen de portada si está disponible
+            // Cargar imagen de portada limpia si existe
             if (item.image) {
                 const coverImg = new Image();
                 coverImg.onload = () => renderCanvas(coverImg);
