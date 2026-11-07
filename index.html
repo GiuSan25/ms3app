@@ -721,7 +721,7 @@
 
             const mesh = new THREE.Mesh(geometry, material);
 
-            // Borde resplandeciente de neón alrededor de la pantalla
+            // Borde resplandeciente de neón alrededor de la pantalla (Limpio y reactivo)
             const frameGeo = new THREE.PlaneGeometry(width + 0.15, height + 0.15);
             const frameMat = new THREE.MeshBasicMaterial({
                 color: new THREE.Color(item.color || '#00f0ff'),
@@ -732,6 +732,7 @@
             const frameMesh = new THREE.Mesh(frameGeo, frameMat);
             frameMesh.position.z = -0.02;
             mesh.add(frameMesh);
+            mesh.userData.frameMesh = frameMesh;
 
             // Título flotante debajo de la pantalla
             const labelMesh = createTitleLabelMesh(item, width);
@@ -744,6 +745,7 @@
                 media: item,
                 isHero: isHero,
                 isHovered: false,
+                initialScale: new THREE.Vector3(1, 1, 1),
                 initialRot: new THREE.Euler()
             };
 
@@ -977,11 +979,11 @@
             const texture = new THREE.CanvasTexture(canvas);
 
             function renderCanvas(img = null) {
-                // Fondo sólido limpio sin ninguna raya, trama o cuadrícula
-                ctx.fillStyle = item.bg || '#041d33';
+                // Fondo completamente limpio sin filtros ni texturas sobrepuestas
+                ctx.fillStyle = '#000000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Dibujar imagen de portada con la máxima nitidez posible y limpia
+                // Dibujar única y exclusivamente la imagen de portada 100% nítida y limpia
                 if (img) {
                     try {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -1351,6 +1353,41 @@
 
             camera.rotation.x = currentRotation.x;
             camera.rotation.y = currentRotation.y;
+
+            // Detección de Hover de Pantallas con Raycaster (Resplandor Neón e Inclinación/Escala al pasar el puntero)
+            if (isUniverseActive && !isCinematicMode) {
+                raycaster.setFromCamera(gazeEnabled ? new THREE.Vector2(0,0) : mouse, camera);
+                const intersects = raycaster.intersectObjects(screenMeshes, true);
+
+                let hoveredObj = null;
+                if (intersects.length > 0) {
+                    let topMesh = intersects[0].object;
+                    while (topMesh.parent && topMesh.parent !== scene) {
+                        if (topMesh.userData && topMesh.userData.type) break;
+                        topMesh = topMesh.parent;
+                    }
+                    if (topMesh.userData && (topMesh.userData.type === 'screen' || topMesh.userData.type === 'celebrity_circle' || topMesh.userData.type === 'category_btn')) {
+                        hoveredObj = topMesh;
+                    }
+                }
+
+                screenMeshes.forEach(mesh => {
+                    const isHovered = (mesh === hoveredObj);
+                    const targetScale = isHovered ? 1.08 : 1.0;
+                    
+                    // Animación suave de escala
+                    mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
+
+                    // Iluminación del marco neón
+                    if (mesh.userData.frameMesh) {
+                        mesh.userData.frameMesh.material.opacity = THREE.MathUtils.lerp(
+                            mesh.userData.frameMesh.material.opacity,
+                            isHovered ? 1.0 : 0.7,
+                            0.15
+                        );
+                    }
+                });
+            }
 
             // Lógica de Puntero por Mirada (Gaze Cursor)
             if (gazeEnabled && isUniverseActive && !isCinematicMode) {
